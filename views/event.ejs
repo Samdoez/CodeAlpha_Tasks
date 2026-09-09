@@ -6,19 +6,42 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
-    <title>Document</title>
+    <link rel="stylesheet" href="/index.css">
+    <title>Samuel Event Management system</title>
 </head>
 <body>
-    <div>
+    <div class="nav">
         <h1 class="">Welcome to Samuel Events Registration System</h1>
     </div>
-    <div>
-        <h1 class="">Events</h1>
-    </div>
-    <% if (locals.message) { %>
-        <p><%= message %></p>
-   <% } %>
+    <div class="">
+        <% if (locals.message) { %>
+                <p><%= message %></p>
+        <% } %>
 
+        <h1 class=""> Upcoming Events </h1>
+        <a class="btn-link" href="/viewevents">View Events</a>
+        <a class="btn-link" href="/hideevents">Hide Events</a>
+    </div>
+        
+    <% if (locals.displayEvents) { %>
+        <div class="event-grid">
+                <% displayEvents.forEach(event => { %>
+                    <div class="event-card">
+                        <h2><%= event.event_name %></h2>
+                            <a class="btn-link" href="/viewDetails/<%= event.event_id %>">View Events Details</a>
+                            <a class="btn-link" href="/registerEvent">Register Event</a>
+                            <a class="btn-link" href="/unregisterEvent">Unregister Event</a>
+
+                        <% if (locals.eventDetails && eventDetails.event_id === event.event_id) { %>
+                            <div>
+                                <p> Name: <%= eventDetails.event_name %> </p>
+                                <p> Venue: <%= eventDetails.event_location %> | Capacity: <%= eventDetails.event_capacity %> </p>
+                                <p> Date: <%= eventDetails.formatted_date %> </p>
+                            </div>
+                        <% } %> 
+                    </div>
+                <% }) %>
+        </div>
+    <% } %>
 </body>
 </html>

@@ -9,7 +9,6 @@ import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
 import env from "dotenv";
-import { error } from "node:console";
 
 
 const app = express();
@@ -118,10 +117,53 @@ app.post("/loginUser", async (req, res) => {
     }
 });
 
+//to handle the event page
 app.get("/event", (req, res) =>{
     try {
         return res.render("event.ejs");
     } catch (error) {
+        console.error("An error occurred:", error.stack);
+        return res.status(500).render("index.ejs", {error: "Internal Server Error"});
+    }
+})
+
+//to display the events 
+app.get("/viewevents", async(req,res) =>{
+    try {
+        const getEvents = await db.query("SELECT event_id, event_name FROM event_details");
+        if (getEvents.rows.length === 0){
+            return res.status(200).render("event.ejs", {message: "No Upcoming event currently"});
+        }
+        console.log(getEvents.rows)
+        const displayEvents = getEvents.rows; //i can access an array with just the .rows method
+        return res.status(200).render("event.ejs", {displayEvents: displayEvents});
+    } catch (error) {
+        console.error("An error occurred:", error.stack);
+        return res.status(500).render("index.ejs", {error: "Internal Server Error"});
+    }
+})
+
+//to display the event details
+app.get("/viewDetails/:id", async(req,res) =>{
+    const id = req.params.id;
+    console.log(id);
+    if (!Number.isInteger(Number(id))) {  // Check if ID is not a valid integer
+        return res.status(400).render("index.ejs", { error: "Invalid Event ID format" });
+    }
+
+    try {
+        const getEvents = await db.query("SELECT event_id, event_name FROM event_details");
+        const getEventDetails = await db.query("SELECT event_id, event_name, event_location, event_capacity, TO_CHAR(event_date, 'HH12:MI AM, DDth Mon YYYY') AS formatted_date FROM event_details WHERE event_id = $1", [id]);
+        if (getEventDetails.rows.length === 0){
+            return res.status(404).render("error.ejs", { message: "Event not found." });
+        }
+        console.log(getEventDetails.rows);
+        return res.status(200).render("event.ejs", {
+            displayEvents: getEvents.rows, 
+            eventDetails: getEventDetails.rows[0]});
+       
+    } catch (error) {
+        console.error("An error occurred:", error.stack);
         return res.status(500).render("index.ejs", {error: "Internal Server Error"});
     }
 })
