@@ -33,13 +33,36 @@
     gap: 1em;
     width: 60%;
 }
-.btn-link {
+.btn-link{
     display: inline-block;
-    padding: 10px 20px;
+    padding: 8px 16px;
     background-color: #007bff;
-    color: white;
-    text-decoration: none;
+    color: #ffffff;
+    border: none;
     border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+.btn-link:hover:not(:disabled):not(.disabled) {
+    background-color: #166dca;
+}
+.disabled{
+    background-color: #6c757d; 
+    color: #d6d6d6;       
+    display: inline-block;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px; 
+    opacity: 0.65;      
+    cursor: not-allowed;      
+    pointer-events: none;      
+    box-shadow: none;
 }
 .container { max-width: 900px; margin: 0 auto; }
         .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
@@ -53,3 +76,43 @@
         .btn-secondary { background: #6c757d; color: white; }
         dialog { border: none; border-radius: 8px; padding: 2rem; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         dialog::backdrop { background: rgba(0,0,0,0.5); }
+/* Darkened & Blurred Fullscreen Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
+    backdrop-filter: blur(5px);          /* Blurs the background page */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;                       /* Ensures it sits above all page elements */
+}
+
+/* Centered White Modal Card */
+.modal-content {
+    background-color: #ffffff;
+    padding: 24px 32px;
+    border-radius: 8px;
+    max-width: 70%;
+    height: 40vh;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+/* Close (X) Button */
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+}
+
+.close-btn:hover {
+    color: #000;
+}
