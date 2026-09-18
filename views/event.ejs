@@ -11,52 +11,56 @@
 </head>
 <body>
     <div class="nav">
-        <h1 class="">Welcome to Samuel Events Registration System</h1>
-        
-        <form action="/logout" method="POST" style="display: inline;">
-            <button type="submit" class="btn-logout">Logout</button>
-        </form>
+        <h2 class="">Welcome to Samuel Events Registration System</h2>
+        <div>
+            <form action="/logout" method="POST">
+                <button type="submit" class="btn-link">Logout</button>
+            </form>
+        </div>
     </div>
-    <div class="">
+
+    <div class="event-cont">
         <% if (locals.message) { %>
                 <p><%= message %></p>
         <% } %>
 
         <h1 class=""> Trending Events </h1>
-        <a class="btn-link" href="/viewevents">View Events</a>
-        <a class="btn-link" href="/hideevents">Hide Events</a>
-    </div>
+        <div class="event-head ">
+            <a class="btn-link" href="/viewevents">View Events</a>
+            <a class="btn-link" href="/hideevents">Hide Events</a>
+        </div>
         
-    <% if (locals.displayEvents) { %>
-        <div class="event-grid">
-                <% displayEvents.forEach(event => { %>
-                    <div class="event-card">
-                        <h2><%= event.event_name %></h2>
-                            <a class="btn-link" href="/viewDetails/<%= event.event_id %>">View Events Details</a>
-                            <!-- <a class="btn-link" href="/registerEvent">Register Event</a> -->
-                            <a class="btn-link" href="#" data-event-id="<%= event.event_id %>" onclick="openRegisterModal('<%= event.event_id %>', '<%= event.event_name %>'); return false;">
-                            Register Event </a>
-                            
-                            <% if (event.is_registered) { %>
-                                <a class="btn-link" href="/unregisterEvent/<%= event.event_id %>">Unregister Event</a>
-                            <% } else { %>
-                                <a class="btn-link disabled" aria-disabled="true">Unregister Event</a>
+        <% if (locals.displayEvents) { %>
+            <div class="event-grid">
+                    <% displayEvents.forEach(event => { %>
+                        <div class="event-card">
+                            <h2><%= event.event_name %></h2>
+                                <a class="btn-link" href="/viewDetails/<%= event.event_id %>">View Events Details</a>
+                                <!-- <a class="btn-link" href="/registerEvent">Register Event</a> -->
+                                <a class="btn-link" href="#" data-event-id="<%= event.event_id %>" onclick="openRegisterModal('<%= event.event_id %>', '<%= event.event_name %>'); return false;">
+                                Register Event </a>
+                                
+                                <% if (event.is_registered) { %>
+                                    <a class="btn-link" href="/unregisterEvent/<%= event.event_id %>">Unregister Event</a>
+                                <% } else { %>
+                                    <a class="btn-link disabled" aria-disabled="true">Unregister Event</a>
+                                <% } %> 
+                                
+                            <% if (locals.eventDetails && eventDetails.event_id === event.event_id) { %>
+                                <div>
+                                    <p> Name: <%= eventDetails.event_name %> </p>
+                                    <p> Venue: <%= eventDetails.event_location %> | Capacity: <%= eventDetails.event_capacity %> </p>
+                                    <p> Date: <%= eventDetails.formatted_date %> </p>
+                                </div>
                             <% } %> 
-                            
-                        <% if (locals.eventDetails && eventDetails.event_id === event.event_id) { %>
-                            <div>
-                                <p> Name: <%= eventDetails.event_name %> </p>
-                                <p> Venue: <%= eventDetails.event_location %> | Capacity: <%= eventDetails.event_capacity %> </p>
-                                <p> Date: <%= eventDetails.formatted_date %> </p>
-                            </div>
-                        <% } %> 
-                    </div>
-                <% }) %>
-        </div> 
-    <% } %>
+                        </div>
+                    <% }) %>
+            </div> 
+        <% } %>
+    </div>
 
         <!-- Registration Modal Overlay -->
-    <div id="registerModal" class="modal-overlay" style="display: none;">
+    <div id="registerModal" class="modal-overlay" style="display: <%= locals.regError ? 'flex' : 'none' %>;">
         <div class="modal-content">
             <span class="close-btn" onclick="closeRegisterModal()">&times;</span>
             
@@ -89,6 +93,9 @@
 
                 <button type="submit" class="btn-link">Submit Registration</button>
             </form>
+            <% if(locals.regError) { %> 
+              <p class="error-message" style="color: red; font-weight: bold;"><%= regError %></p>
+            <% } %>
         </div>
     </div>
 

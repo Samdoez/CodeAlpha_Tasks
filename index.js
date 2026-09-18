@@ -53,12 +53,16 @@ app.get("/", (req, res) =>{
 
 //to handle an account creation
 app.post("/createAccount", async (req, res) => {
-  const email = (req.body.email || "").trim();
+  const email = (req.body.email || "").toLowerCase().trim();
   const password = (req.body.password || "").trim();
   const confirmPassword = (req.body.confirmPassword || "").trim();
 
-  if (!email || !password || !confirmPassword) {
+  if (!email || !password || !confirmPassword) {  
     return res.status(400).render("index.ejs", { error: "All fields are required" });
+  }
+
+  if (hasInvalidEmailDomain(email)) {
+    return res.status(400).render("index.ejs", { error: "Invalid email domain. Please use a valid email address." });
   }
 
   try {
@@ -85,7 +89,7 @@ app.post("/createAccount", async (req, res) => {
     req.session.userId = result.rows[0].id;
 
     console.log("User registered and logged in with ID:", req.session.userId);
-    return res.redirect("/viewevents");
+    return res.redirect("/event");
   } catch (error) {
     console.error("An error occurred:", error.stack);
     return res.status(500).render("index.ejs", { error: "Internal Server Error" });
@@ -101,23 +105,18 @@ app.get("/loginPage", (req,res) =>{
         return res.status(500).render("index.ejs", {error: "Internal Server Error"})
     }
 });
-//to navigate to the loginPage setup
-app.get("/adminloginPage", (req,res) =>{
-    try {
-        return res.render("admin.ejs");
-    } catch (error) {
-        console.log("An error occured: ", error.stack);
-        return res.status(500).render("index.ejs", {error: "Internal Server Error"})
-    }
-});
 
 //to handle an login section
 app.post("/loginUser", async (req, res) => {
-    const email = (req.body.email || "").trim();
+    const email = (req.body.email || "").toLowerCase().trim();
     const password = (req.body.password || "").trim();
 
     if (!email || !password) {
         return res.status(400).render("index.ejs", { error: "Please enter email and password" });
+    }
+
+    if (hasInvalidEmailDomain(email)) {
+    return res.status(400).render("index.ejs", { error: "Invalid email domain. Please use a valid email address." });
     }
 
      try { // Select the user ID along with email and password
@@ -135,7 +134,7 @@ app.post("/loginUser", async (req, res) => {
     req.session.userId = user.id;
 
     console.log("User logged in with ID:", req.session.userId);
-    return res.redirect("/viewevents");
+    return res.redirect("/event");
     } catch (error) {
         console.error("An error occurred:", error.stack);
         return res.status(500).render("index.ejs", { error: "Internal Server Error" });
@@ -167,6 +166,21 @@ app.get("/viewevents", async (req, res) => {
       return res.status(200).render("event.ejs", { message: "No Upcoming event currently" });
     }
     return res.status(200).render("event.ejs", { displayEvents: getEvents });
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("index.ejs", { error: "Internal Server Error" });
+  }
+});
+
+//to hide the events
+app.get("/hideevents", async (req, res) => {
+  // Check if user is logged in
+  if (!req.session.userId) {
+    return res.redirect("/loginPage");
+  }
+
+  try { //redirect to event
+    return res.redirect("/event");
   } catch (error) {
     console.error("An error occurred:", error.stack);
     return res.status(500).render("index.ejs", { error: "Internal Server Error" });
@@ -210,9 +224,34 @@ app.post("/registerEvent", async (req, res) => {
   if (!req.session.userId) {
     return res.redirect("/loginPage");
   } 
-
-  const { eventId, firstName, lastName, gender } = req.body; //i am applying object destructuring to get my inputs and call then directly
   const currentUserId = req.session.userId;
+
+  let { eventId, firstName, lastName, gender } = req.body; //i am applying object destructuring to get my inputs and call then directly
+  firstName = (firstName || "").trim();
+  lastName = (lastName || "").trim();
+  gender = (gender || "").trim();
+
+  console.log(firstName);
+
+  if (!eventId || !firstName || !lastName || !gender) {
+        return res.status(400).render("event.ejs", { regError: "All fields are required." });
+    }
+
+  if (firstName.length < 2 || lastName.length < 2) {
+        const getEvents = await getAllEvents(currentUserId);
+        return res.status(400).render("event.ejs", { 
+          displayEvents: getEvents,
+          regError: "First and last names must be at least 2 characters long." });
+    }
+  const nameRegex = /^[A-Za-z\s-]+$/;
+    if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+        return res.status(400).render("event.ejs", { regError: "Names can only contain letters, spaces, and hyphens." });
+    }
+
+  const allowedGenders = ["Male", "Female", "Other"];
+    if (!allowedGenders.includes(gender)) {
+        return res.status(400).render("event.ejs", { regError: "Please select a valid gender option." });
+    }
 
   try {
     await db.query("INSERT INTO registration (user_id, event_id, first_name, last_name, gender, event_reg_date) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)"
@@ -243,6 +282,39 @@ app.get("/unregisterEvent/:id", async (req, res) => {
   }
 });
 
+//to navigate to the Admin loginPage setup
+app.get("/adminloginPage", (req,res) =>{
+    try {
+        return res.render("admin.ejs");
+    } catch (error) {
+        console.log("An error occured: ", error.stack);
+        return res.status(500).render("index.ejs", {error: "Internal Server Error"})
+    }
+});
+
+//
+app.post("/adminloginUser", async (req,res) =>{
+    const email = (req.body.email || "").toLowerCase().trim();
+    const password = (req.body.password || "").toLowerCase().trim();
+
+    if (!email || !password) {
+      console.log("Complete all fields");
+      return res.status(400).render("admin.ejs", {error: "All fields are required"});
+    }
+
+    try {
+      const result = await db.query("SELECT email, password FROM user_reg WHERE email = $1 AND password = $2", [email, password]);
+      if (result.rows.length === 0) {
+        return res.status(400).render("admin.ejs", {error: "Incorrect Details"});
+      }
+      console.log("Login Successfully");
+      return res.render("adminDashboard.ejs");
+    } catch (error) {
+        console.log("An error occured: ", error.stack);
+        return res.status(500).render("index.ejs", {error: "Internal Server Error"})
+    }
+});
+
 // to log out the current user
 app.post("/logout", (req, res) => {
     req.session.destroy((err) => {
@@ -250,6 +322,7 @@ app.post("/logout", (req, res) => {
             console.error("Logout error:", err);
             return res.status(500).render("index.ejs", { error: "Could not log out" });
         }
+        console.log("logout Successfully");
         res.clearCookie("connect.sid");
         res.redirect("/loginPage");
     });
@@ -262,6 +335,12 @@ async function getAllEvents(userId) {
         FROM event_details e LEFT JOIN registration r ON r.event_id = e.event_id AND r.user_id = $1
     `, [userId]);
     return result.rows;
+}
+
+function hasInvalidEmailDomain(email) {
+  // Regex pattern
+  const typoPattern = /@(gmai|gmal|gmial|yaho|outloo|hotmai)\.(com|net|org)$/i;
+  return typoPattern.test(email);
 }
 
 app.listen(port, () => { 

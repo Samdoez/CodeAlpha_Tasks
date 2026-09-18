@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
-    <title>Document</title>
+    <title>Samuel Event Registration System</title>
 </head>
 <body>
     <div class="main-cont flex">
@@ -34,13 +34,14 @@
                 <button class="btn-link" type="submit">Create Account</button>
             </form>
             
-            <a href="/loginPage" class="btn-link">Login</a>
-            <a href="/adminloginPage" class="btn-link">Admin Login </a>
+            <a href="/loginPage" class="link-login">Have an account already <strong>Login</strong></a> 
+            <!-- never make an admin login visible to the users -->
 
             <p style="color: red;">
                 <% if (locals.error) { %>
                     <%= error %>
             <% } %>
             </p>
+    </div>
 </body>
 </html>
