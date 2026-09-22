@@ -3,23 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
     <title>Url Shortener</title>
 </head>
 
-<body>
-    <div>
-        <form action="/submitLink" method="POST">
-            <input type="text" name="url" id="url" placeholder="Enter your URL here" required>
-            <button type="submit">Shorten URL</button>
-        </form>
-    </div>
-    <% if (locals.error) { %>
-    <p style="color: red; font-size: large;" onclick=""><%= error %></p>
-    <% } %>
+<body class="flex">
+    <div class="url-cont">
+        <div class="word-cont flex">
+            <h2>This is Url Shortener</h2>
+            <div>
+                <form action="/submitLink" method="POST">
+                    <input type="text" name="url" id="url" placeholder="Enter your URL here" required>
+                    <button type="submit" class="btn-link">Shorten URL</button>
+                </form>
+            </div>
+        
+            <% if (locals.error) { %>
+            <p style="color: red; font-size: large;"><%= error %></p>
+            <% } %>
 
-    <% if (locals.shortUrl) { %>
-        <a style="color: green; font-size: large; padding-top: 10px;" href="<%= shortUrl %>" target="_blank"><%= shortUrl %></a>
-    <% } %>
+            <% if (locals.shortUrl) { %> <!-- to pass the shorted link back, when you click-->
+                <a style="color: green; font-size: large; padding-top: 10px;" href="<%= shortUrl %>" target="_blank"><%= shortUrl %></a>
+            <% } %>
+        </div>
+    </div>
+   
 </body>
 </html>
+ 

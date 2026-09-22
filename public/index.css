@@ -1,0 +1,37 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Urbanist;
+}
+.flex{
+    display:flex;
+    justify-content: center;
+    align-items: center;
+}
+.url-cont{
+    width: 50%;
+    height: 25vh;
+    margin-top: 25vh;
+    background-color: #8abff7;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.word-cont{
+    flex-direction: column;
+    gap:0.5em;
+    padding: 1em;
+}
+.btn-link{
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}

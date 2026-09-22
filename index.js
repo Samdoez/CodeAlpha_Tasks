@@ -29,11 +29,11 @@ db.connect((err) => {
 
 app.get("/", (req, res) =>{
     try{
-      res.render("index.ejs");
+      const { shortUrl, error } = req.query;
+     res.render("index.ejs", { shortUrl, error });
     } catch (err){
       console.log("your request failed, No response from server", err.stack);
-      res.render("index.ejs", {error: "Failed to get a response, check Url."});
-      //res.status(500).send("Something went wrong on our server. Please try again later.");
+      res.status(500).render("index.ejs", {error: "Failed to get a response, check Url."});
 }
 });
 
@@ -79,11 +79,10 @@ app.post("/submitLink", async (req, res) =>{
   }
 });
 
-app.get("/:passedcode", async(req, res) =>{
+// to setup the Set up a redirect route
+app.get("/:passedcode", async(req, res) =>{ // retrieveing the passed code from client side
   try{
       const code = req.params.passedcode;
-
-      if (code === "favicon.ico") return; // to avoid automatic request tot the browser icon
 
       const getMappedLink = await db.query("SELECT long_url FROM urlshortener WHERE short_code = $1", [code]);  
 
@@ -93,7 +92,7 @@ app.get("/:passedcode", async(req, res) =>{
       
       return res.redirect(originalUrl);
     } else {
-      return res.status(404).send("Short URL not found.");
+      return res.status(404).render("index.ejs", {error: "Short URL not found."});
     }
     } catch (err){
        console.error("redirecting error, check your code:", err.stack);
