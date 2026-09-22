@@ -12,12 +12,15 @@
 <body>
     <div class="nav">
         <h2 class="">Welcome to Samuel Events Registration System</h2>
-        <p class="">Admin </p>
-        <div>
-            <form action="/logout" method="POST">
-                <button type="submit" class="btn-link">Logout</button>
-            </form>
+        <div class="adminflex">
+            <h3 class="">Admin </h3>
+            <div>
+                <form action="/logout" method="POST">
+                    <button type="submit" class="btn-link">Logout</button>
+                </form>
+            </div>
         </div>
+        
     </div>
 
     <div class="event-cont">
@@ -27,8 +30,68 @@
 
         <h1 class=""> Trending Events </h1>
         <div class="event-head ">
-            <a class="btn-link" href="/viewevents">View Events</a>
-            <a class="btn-link" href="/hideevents">Hide Events</a>
+            <a class="btn-link" href="/adminViewevents">View Events</a>
+            <a class="btn-link" href="/adminHideevents">Hide Events</a>
+            <a class="btn-link" href="/adminregisteredEvents">View Registered Events</a>            
         </div>
+         
+        <% if (locals.displayEvents) { %>
+            <div class="event-grid">
+                    <% displayEvents.forEach(event => { %>
+                        <div class="event-card">
+                            <h2><%= event.event_name %></h2>
+                                <a class="btn-link" href="/adminviewDetails/<%= event.event_id %>">View Events Details</a>
+                                
+                            <% if (locals.eventDetails && eventDetails.event_id === event.event_id) { %>
+                                <div>
+                                    <p> Name: <%= eventDetails.event_name %> </p>
+                                    <p> Venue: <%= eventDetails.event_location %> | Capacity: <%= eventDetails.event_capacity %> </p>
+                                    <p> Date: <%= eventDetails.formatted_date %> </p>
+                                </div>
+                            <% } %> 
+                        </div>
+                    <% }) %>
+            </div> 
+        <% } %>
+
+        <% if (locals.noDetails) { %>
+            <p><%= noDetails %></p>
+        <% } %>
+        
+        <% if (locals.registeredEventUser) { %>
+            <div class="reg-flex">
+                <h2>Number of Registered Event by Users = <%= totalregistered %>
+                </h2>
+
+                <table class="reg-table">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Event ID</th>
+                            <th>Event Name</th>
+                            <th>Gender</th>
+                            <th>Event Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% registeredEventUser.forEach((e)=> { %>
+                            <tr>
+                                <td> <%= e.first_name %> </td>
+                                <td> <%= e.last_name %> </td>
+                                <td> <%= e.email %> </td>
+                                <td> <%= e.event_id %> </td>
+                                <td> <%= e.event_name %> </td>
+                                <td> <%= e.gender %> </td>
+                                <td> <%= e.event_reg_date %> </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+    </div>
+
 </body>
 </html>

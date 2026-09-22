@@ -288,11 +288,11 @@ app.get("/adminloginPage", (req,res) =>{
         return res.render("admin.ejs");
     } catch (error) {
         console.log("An error occured: ", error.stack);
-        return res.status(500).render("index.ejs", {error: "Internal Server Error"})
+        return res.status(500).render("admin.ejs", {error: "Internal Server Error"})
     }
 });
 
-//
+//to login an Admin Account
 app.post("/adminloginUser", async (req,res) =>{
     const email = (req.body.email || "").toLowerCase().trim();
     const password = (req.body.password || "").toLowerCase().trim();
@@ -303,16 +303,119 @@ app.post("/adminloginUser", async (req,res) =>{
     }
 
     try {
-      const result = await db.query("SELECT email, password FROM user_reg WHERE email = $1 AND password = $2", [email, password]);
+      const result = await db.query("SELECT id, email, password, role FROM user_reg WHERE email = $1 AND password = $2", [email, password]);
       if (result.rows.length === 0) {
         return res.status(400).render("admin.ejs", {error: "Incorrect Details"});
       }
+      console.log(result.rows);
+      const userRole = result.rows[0].role;
+
+      if (userRole !== "admin") {
+        return res.status(400).render("admin.ejs", { error: "Access denied. Not an admin account." });
+      }
+
+      req.session.userId = result.rows[0].id;
+      req.session.isAdmin = true;
+
       console.log("Login Successfully");
       return res.render("adminDashboard.ejs");
     } catch (error) {
         console.log("An error occured: ", error.stack);
-        return res.status(500).render("index.ejs", {error: "Internal Server Error"})
+        return res.status(500).render("admin.ejs", {error: "Internal Server Error"})
     }
+});
+
+// view event by Admin
+app.get("/adminViewevents", async (req, res) => {
+  if (!req.session.userId) { // check if admin is logged in
+    return res.redirect("/loginPage");
+  }
+
+  try { // using the current ID
+    const currentUserId = req.session.userId;
+    const getEvents = await getAllEvents(currentUserId);
+ 
+    return res.status(200).render("adminDashboard.ejs", { displayEvents: getEvents, });
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("admin.ejs", { error: "Internal Server Error" });
+  }
+});
+
+// admin view Details handler
+app.get("/adminviewDetails/:id", async (req, res) => {
+  if (!req.session.userId) {
+    return res.redirect("/loginPage");
+  }
+  const id = req.params.id;
+  if (!Number.isInteger(Number(id))) { //to check if it is a number
+    return res.status(400).render("admin.ejs", { error: "Invalid Event ID format" });
+  }
+
+  try { // next use ther user from session 
+    const currentUserId = req.session.userId;
+    const getEvents = await getAllEvents(currentUserId);
+    
+    const getEventDetails = await db.query(
+      "SELECT event_id, event_name, event_location, event_capacity, TO_CHAR(event_date, 'HH12:MI AM, DDth Mon YYYY') AS formatted_date FROM event_details WHERE event_id = $1", 
+      [id]
+    );
+
+    if (getEventDetails.rows.length === 0) {
+      return res.status(404).render("error.ejs", { message: "Event not found." });
+    }
+    return res.status(200).render("adminDashboard.ejs", {
+      displayEvents: getEvents, 
+      eventDetails: getEventDetails.rows[0]
+    });
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("admin.ejs", { error: "Internal Server Error" });
+  }
+});
+
+//to hide the events
+app.get("/adminHideevents", async (req, res) => {
+  // Check if admin is logged in
+  if (!req.session.userId) {
+    return res.redirect("/loginPage");
+  }
+
+  try { //redirect to event
+    return res.render("adminDashboard.ejs");
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("admin.ejs", { error: "Internal Server Error" });
+  }
+});
+
+// to check registered users from admin dashboard
+app.get("/adminregisteredEvents", async (req, res) => {
+  // Check if admin is logged in
+  if (!req.session.userId || !req.session.isAdmin) {
+    return res.redirect("/adminloginPage");
+  }
+
+  try { //extract all registered event by users from DB
+    const getRegistered = await db.query(`SELECT r.user_id, r.first_name, r.last_name, r.gender, TO_CHAR(r.event_reg_date, 'Dy, Mon DD, YYYY') AS event_reg_date, u.email, ed.event_id, ed.event_name
+      FROM registration AS r
+      JOIN event_details AS ed ON r.event_id = ed.event_id
+      JOIN user_reg AS u ON r.user_id = u.id
+      ORDER BY r.event_reg_date DESC `);
+
+    if (getRegistered.rows.length === 0) {
+      return res.status(200).render("adminDashboard.ejs", {noDetails: "No details were found"});
+    }
+    const registeredEventArray = getRegistered.rows;
+    console.log(getRegistered.rows);
+    return res.status(200).render("adminDashboard.ejs", {
+      totalregistered: registeredEventArray.length,
+      registeredEventUser: registeredEventArray});
+
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("admin.ejs", { error: "Internal Server Error" });
+  }
 });
 
 // to log out the current user

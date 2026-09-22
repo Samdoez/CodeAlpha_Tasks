@@ -173,3 +173,37 @@
 .close-btn:hover {
     color: #000;
 }
+
+/* admin css */
+.adminflex{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+}
+.reg-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.reg-table th, .reg-table td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.reg-table thead {
+    background-color: white;
+    color: #007bff;
+}
+
+.reg-table tbody tr:nth-child(odd) {
+    background-color: #007bff;
+    color: white;
+}
+
+.reg-table tbody tr:nth-child(even) {
+    background-color: white;
+    color: #333;
+}
