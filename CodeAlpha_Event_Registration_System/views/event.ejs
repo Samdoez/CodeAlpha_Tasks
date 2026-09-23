@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <title>Samuel Event Management system</title>
+</head>
+<body>
+    <div class="nav">
+        <h2 class="">Welcome to Samuel Events Registration System</h2>
+        <div>
+            <form action="/logout" method="POST">
+                <button type="submit" class="btn-link">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="event-cont">
+        <% if (locals.message) { %>
+                <p><%= message %></p>
+        <% } %>
+
+        <h1 class=""> Trending Events </h1>
+        <div class="event-head ">
+            <a class="btn-link" href="/viewevents">View Events</a>
+            <a class="btn-link" href="/hideevents">Hide Events</a>
+        </div>
+        
+        <% if (locals.displayEvents) { %>
+            <div class="event-grid">
+                    <% displayEvents.forEach(event => { %>
+                        <div class="event-card">
+                            <h2><%= event.event_name %></h2>
+                                <a class="btn-link" href="/viewDetails/<%= event.event_id %>">View Events Details</a>
+                                <!-- <a class="btn-link" href="/registerEvent">Register Event</a> -->
+                                <a class="btn-link" href="#" data-event-id="<%= event.event_id %>" onclick="openRegisterModal('<%= event.event_id %>', '<%= event.event_name %>'); return false;">
+                                Register Event </a>
+                                
+                                <% if (event.is_registered) { %>
+                                    <a class="btn-link" href="/unregisterEvent/<%= event.event_id %>">Unregister Event</a>
+                                <% } else { %>
+                                    <a class="btn-link disabled" aria-disabled="true">Unregister Event</a>
+                                <% } %> 
+                                
+                            <% if (locals.eventDetails && eventDetails.event_id === event.event_id) { %>
+                                <div>
+                                    <p> Name: <%= eventDetails.event_name %> </p>
+                                    <p> Venue: <%= eventDetails.event_location %> | Capacity: <%= eventDetails.event_capacity %> </p>
+                                    <p> Date: <%= eventDetails.formatted_date %> </p>
+                                </div>
+                            <% } %> 
+                        </div>
+                    <% }) %>
+            </div> 
+        <% } %>
+    </div>
+
+        <!-- Registration Modal Overlay -->
+    <div id="registerModal" class="modal-overlay" style="display: <%= locals.regError ? 'flex' : 'none' %>;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeRegisterModal()">&times;</span>
+            
+            <h2>Register for <span id="modalEventName"></span></h2>
+            
+            <!-- Form submits to POST /registerEvent -->
+            <form action="/registerEvent" method="POST">
+                <!-- Hidden input to store the dynamic event_id -->
+                <input type="hidden" id="modalEventId" name="eventId" value="">
+
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" required placeholder="Enter your first name">
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" required placeholder="Enter your last name">
+                </div>
+
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="" disabled selected>Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-link">Submit Registration</button>
+            </form>
+            <% if(locals.regError) { %> 
+              <p class="error-message" style="color: red; font-weight: bold;"><%= regError %></p>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        function openRegisterModal(eventId, eventName) {
+            document.getElementById("modalEventName").innerText = eventName;
+            document.getElementById("modalEventId").value = eventId;
+            document.getElementById("registerModal").style.display = "flex";
+        }
+
+        function closeRegisterModal() {
+            document.getElementById("registerModal").style.display = "none";
+        }
+    </script>
+</body>
+</html>

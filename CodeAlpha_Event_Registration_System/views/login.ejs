@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <title>Document</title>
+</head>
+<body>
+    <div class="main-cont flex">
+        <h1 class="text">Welcome to Samuel <br/>Events Registration System</h1>
+        <p class="">Login your account</p>
+        
+        <div class="reg-cont-login flex">
+            <div class="back-cont">
+                <form action="/" method="get">
+                    <button type="submit" class="back"> Back </button>
+                </form>
+            </div>
+            
+            <div class="form2">
+                <form class="form-flex flex" action="/loginuser" method="post" autocomplete="off">
+                <div>
+                    <label for="email">Email</label> <br/>
+                    <input type="email" name="email" id="email" placeholder="enter your email"required autocomplete="off"> 
+                </div>
+               
+                <div>
+                    <label for="password">Password</label> <br/>
+                    <input type="password" name="password" id="password" placeholder="password"required autocomplete="off">
+                </div>
+            
+                <button type="submit" class="btn-link">login</button>
+                </form>
+            </div>
+             
+            <p style="color: red;">
+                <% if (locals.error) { %>
+                    <%= error %>
+            <% } %>
+            </p>
+        </div>
+</body>
+</html>
