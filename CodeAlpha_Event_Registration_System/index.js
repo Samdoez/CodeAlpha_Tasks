@@ -10,10 +10,12 @@ import bodyParser from "body-parser";
 import pg from "pg";
 import env from "dotenv";
 import session from "express-session";
+import bcrypt from "bcrypt";
 
 const app = express();
 const port = 3000;
 env.config();
+const saltRounds = 10;
 
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -78,11 +80,13 @@ app.post("/createAccount", async (req, res) => {
     if (password !== confirmPassword) {
       return res.status(400).render("index.ejs", { error: "Password Mis-match" });
     }
+    //next implementing password hashing for security
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     //if all verification successful inssert into DB and return RETURNING id for session handling
     const result = await db.query(
       "INSERT INTO user_reg (email, password) VALUES ($1, $2) RETURNING id", 
-      [email, password]
+      [email, hashedPassword]
     );
     
     //to store new created user id in a session
@@ -116,13 +120,13 @@ app.post("/loginUser", async (req, res) => {
     }
 
     if (hasInvalidEmailDomain(email)) {
-    return res.status(400).render("index.ejs", { error: "Invalid email domain. Please use a valid email address." });
+    return res.status(400).render("login.ejs", { error: "Invalid email domain. Please use a valid email address." });
     }
 
      try { // Select the user ID along with email and password
     const checkDetails = await db.query(
-      "SELECT id, email, password FROM user_reg WHERE email = $1 AND password = $2", 
-      [email, password]
+      "SELECT id, email, password FROM user_reg WHERE email = $1", 
+      [email]
     );
 
     if (checkDetails.rows.length === 0) {
@@ -132,6 +136,13 @@ app.post("/loginUser", async (req, res) => {
 
     //to save user id in session on seccessful login
     req.session.userId = user.id;
+    
+    //now i want to Compare entered plain-text password with stored hashed password
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatch) {
+      return res.status(400).render("login.ejs", { error: "Incorrect Details" });
+    }
 
     console.log("User logged in with ID:", req.session.userId);
     return res.redirect("/event");
@@ -302,13 +313,20 @@ app.post("/adminloginUser", async (req,res) =>{
       return res.status(400).render("admin.ejs", {error: "All fields are required"});
     }
 
-    try {
-      const result = await db.query("SELECT id, email, password, role FROM user_reg WHERE email = $1 AND password = $2", [email, password]);
+    try {//because of hashed password we fetch only by  email
+      const result = await db.query("SELECT id, email, password, role FROM user_reg WHERE email = $1", [email]);
       if (result.rows.length === 0) {
         return res.status(400).render("admin.ejs", {error: "Incorrect Details"});
       }
       console.log(result.rows);
       const userRole = result.rows[0].role;
+      const userPassword = result.rows[0].password;
+
+      const isPasswordMatch = await bcrypt.compare(password, userPassword);
+
+      if (!isPasswordMatch) {
+        return res.status(400).render("admin.ejs", { error: "Incorrect Details" });
+      }
 
       if (userRole !== "admin") {
         return res.status(400).render("admin.ejs", { error: "Access denied. Not an admin account." });
@@ -449,4 +467,3 @@ function hasInvalidEmailDomain(email) {
 app.listen(port, () => { 
   console.log(`Server running on port: ${port}`);
 }); 
-

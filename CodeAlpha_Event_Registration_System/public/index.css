@@ -88,6 +88,9 @@
     text-decoration: none;
     color:#166dca;
 }
+.red{
+    color: red;
+}
 .back-cont{
     height: 5vh;
     width: 90%;

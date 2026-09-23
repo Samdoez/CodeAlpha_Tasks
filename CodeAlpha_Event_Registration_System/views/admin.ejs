@@ -12,7 +12,7 @@
 <body>
   <div class="main-cont flex">
         <h1 class="text">Welcome to Samuel <br/>Events Registration System</h1>
-        <p class="">Admin Login</p>
+        <p class="red">Admin Login</p>
         
         <div class="reg-cont flex">
               <form class="form-flex flex" action="/adminloginUser" method="post" autocomplete="off">
@@ -31,7 +31,7 @@
             
             <p style="color: red;">
                 <% if (locals.error) { %>
-                    <p class="error-message" style="color: red; font-weight: bold;"><%= error %></p>
+                    <p class="error-message red"><%= error %></p>
             <% } %>
             </p>
         </div>
