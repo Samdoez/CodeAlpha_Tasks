@@ -17,8 +17,9 @@ const port = 3000;
 env.config();
 const saltRounds = 10;
 
-app.use(express.static("public"));
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public"));
 
 app.use( session({
     secret: process.env.SESSION_SECRET || "supersecretkey", 
@@ -230,10 +231,10 @@ app.get("/viewDetails/:id", async (req, res) => {
   }
 });
 
-// registration submission
+// registration submission and switched to a fetch-based submission
 app.post("/registerEvent", async (req, res) => {
   if (!req.session.userId) {
-    return res.redirect("/loginPage");
+    return res.status(401).json({ error: "Please log in first." });
   } 
   const currentUserId = req.session.userId;
 
@@ -245,37 +246,79 @@ app.post("/registerEvent", async (req, res) => {
   console.log(firstName);
 
   if (!eventId || !firstName || !lastName || !gender) {
-        return res.status(400).render("event.ejs", { regError: "All fields are required." });
+    return res.status(400).json({ error: "All fields are required." });
     }
 
-  if (firstName.length < 2 || lastName.length < 2) {
-        const getEvents = await getAllEvents(currentUserId);
-        return res.status(400).render("event.ejs", { 
-          displayEvents: getEvents,
-          regError: "First and last names must be at least 2 characters long." });
+  if (firstName.length <= 2 || lastName.length <= 2) {
+    return res.status(400).json({ error: "First and last names must be at least 2 characters long." });
     }
+    
   const nameRegex = /^[A-Za-z\s-]+$/;
     if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
-        return res.status(400).render("event.ejs", { regError: "Names can only contain letters, spaces, and hyphens." });
+    return res.status(400).json({ error: "Names can only contain letters, spaces, and hyphens." });
     }
 
   const allowedGenders = ["Male", "Female", "Other"];
     if (!allowedGenders.includes(gender)) {
-        return res.status(400).render("event.ejs", { regError: "Please select a valid gender option." });
+    return res.status(400).json({ error: "Please select a valid gender option." });
     }
 
   try {
     await db.query("INSERT INTO registration (user_id, event_id, first_name, last_name, gender, event_reg_date) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)"
     , [currentUserId, eventId, firstName, lastName, gender]);
-    return res.redirect("/viewevents");
+    // return res.redirect("/viewevents");
+    
+    return res.status(200).json({ success: true, eventId });
+  } catch (error) {
+        return res.status(500).json({ error: "Already registered for event." });
+    // console.error("Error registering event:", error.stack);
+    // return res.status(500).render("index.ejs", { error: "Failed to register for event." });
+  }
+});
+
+app.post("/registerEvent", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Please log in first." });
+  }
+  const currentUserId = req.session.userId;
+
+  let { eventId, firstName, lastName, gender } = req.body;
+  firstName = (firstName || "").trim();
+  lastName = (lastName || "").trim();
+  gender = (gender || "").trim();
+
+  if (!eventId || !firstName || !lastName || !gender) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  if (firstName.length <= 2 || lastName.length <= 2) {
+    return res.status(400).json({ error: "First and last names must be at least 2 characters long." });
+  }
+
+  const nameRegex = /^[A-Za-z\s-]+$/;
+  if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+    return res.status(400).json({ error: "Names can only contain letters, spaces, and hyphens." });
+  }
+
+  const allowedGenders = ["Male", "Female", "Other"];
+  if (!allowedGenders.includes(gender)) {
+    return res.status(400).json({ error: "Please select a valid gender option." });
+  }
+
+  try {
+    await db.query(
+      "INSERT INTO registration (user_id, event_id, first_name, last_name, gender, event_reg_date) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
+      [currentUserId, eventId, firstName, lastName, gender]
+    );
+    return res.status(200).json({ success: true, eventId });
   } catch (error) {
     console.error("Error registering event:", error.stack);
-    return res.status(500).render("index.ejs", { error: "Failed to register for event." });
+    return res.status(500).json({ error: "Failed to register for event." });
   }
 });
 
 // to unregister an event
-app.get("/unregisterEvent/:id", async (req, res) => {
+app.post("/unregisterEvent/:id", async (req, res) => {
   if (!req.session.userId) {
     return res.redirect("/loginPage");
   }
