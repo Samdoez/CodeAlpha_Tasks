@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <title>Best Restaurant Management System</title>
+</head>
+<body>
+    <div class="main-cont flex">
+        <h1 class="text">Welcome to Best <br/> Restaurant Management System</h1>
+        <p class="">Create an account</p>
+        
+        <div class="reg-cont flex">
+              <form class="form-flex flex" action="/createAccount" method="post" autocomplete="off">
+                <div>
+                    <label for="FName">First Name</label> <br/>
+                    <input type="text" name="FName" id="FName" placeholder="enter your First Name"required autocomplete="off"> 
+                </div>
+
+                <div>
+                    <label for="LName">Last Name</label> <br/>
+                    <input type="text" name="LName" id="LName" placeholder="enter your Last Name"required autocomplete="off"> 
+                </div>
+
+                <div>
+                    <label for="email">Email</label> <br/>
+                    <input type="email" name="email" id="email" placeholder="enter your email"required autocomplete="off"> 
+                </div>
+               
+                <div>
+                    <label for="password">Password</label> <br/>
+                    <input type="password" name="password" id="password" placeholder="create password"required autocomplete="off">
+                </div>
+                
+                <div>
+                    <label for="confimPassword">Confirm Password</label> <br/>
+                    <input type="password" name="confirmPassword" id="confirmPassword" placeholder="confirm password"required autocomplete="off">
+                </div>
+                
+                <button class="btn-link" type="submit">Create Account</button>
+            </form>
+            
+            <a href="/loginPage" class="link-login">Have an account already <strong>Login</strong></a> 
+
+            <p class="err-style">
+                <% if (locals.error) { %>
+                    <%= error %>
+            <% } %>
+            </p>
+    </div>
+</body>
+</html>
