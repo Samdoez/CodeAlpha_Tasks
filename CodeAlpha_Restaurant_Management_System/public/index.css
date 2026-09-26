@@ -9,12 +9,13 @@
     justify-content: center;
     align-items: center;
 }
-.main-cont{
-    background-color: #eff5f6;
-    height: 100vh;
+.intro-nav{
+    background-color: #166dca;
+    height: 20vh;
     width: 100%;
-    gap: 1em;
-    flex-direction: column;
+    padding: 0.5em;
+    text-align: center;
+    color: #eff5f6;
 }
 .nav{
     background-color: #bcdfe7;
@@ -22,6 +23,16 @@
     padding: 1.2em;
     display: flex;
     justify-content: space-between;
+}
+.main-cont{
+    background-color: #eff5f6;
+    height: 80vh;
+    width: 100%;
+    gap: 1em;
+    flex-direction: column;
+}
+.main-cont h2{
+    color: #166dca;
 }
 .event-cont{
     background-color: #eff5f6;
@@ -43,7 +54,7 @@
 .reg-cont{
     background-color: #afdde5;
     width: 35%;
-    height: 50vh;
+    height: 65vh;
     flex-direction: column;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);

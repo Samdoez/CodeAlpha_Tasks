@@ -31,7 +31,7 @@ CREATE TABLE available_reservation_table (
 CREATE TABLE activity_registration_table (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES user_reg_table(id) ON DELETE CASCADE,
-    inventory_id INTEGER REFERENCES inventory_table(id) ON DELETE CASCADE,
+    inventory_id INTEGER REFERENCES inventory_menu_table(id) ON DELETE CASCADE,
     reservation_id INTEGER REFERENCES available_reservation_table(id) ON DELETE CASCADE,
     activity_type VARCHAR(20) NOT NULL CHECK (activity_type IN ('FOOD_ORDER', 'TABLE_RESERVATION')),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
