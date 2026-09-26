@@ -55,8 +55,6 @@ app.post("/createAccount", async (req,res) => {
   const password = (req.body.password || "").trim();
   const confirmPassword = (req.body.confirmPassword || "").trim();
 
-  console.log(fname, lname, email, password, confirmPassword);
-
   if (!fname || !lname || !email || !password || !confirmPassword) {  //my check against empty field
     return res.status(400).render("createAccount.ejs", { error: "All fields are required" });
   }
@@ -99,17 +97,119 @@ app.post("/createAccount", async (req,res) => {
   }
 });
 
+//to render the login page
+app.get("/loginPage", (req, res) =>{
+    try {
+        return res.status(200).render("loginUser.ejs");
+    } catch (error) {
+        console.log("An error occured: ", error.stack);
+        return res.status(500).render("createAccount.ejs", {error: "Internal Server Error"})
+    }
+});
+
+//to handle all verification when trying to login a user
+app.post("/loginUser", async (req,res) => {
+  const email = (req.body.email || "").toLowerCase().trim();
+  const password = (req.body.password || "").trim();
+
+  if (!email || !password) {  //my check against empty field
+    return res.status(400).render("loginUser.ejs", { error: "All fields are required" });
+  }
+
+  if (hasInvalidEmailDomain(email)) { //my check against invalid domain
+    return res.status(400).render("loginUser.ejs", { error: "Invalid email domain. Please use a valid email address." });
+  }
+
+  try { // to check the DB if the accounts xist
+    const checkDetails = await db.query("SELECT id, email, password FROM user_reg_table WHERE email = $1", [email]);
+
+    if (checkDetails.rows.length === 0) {
+      return res.status(400).render("loginUser.ejs", { error: "Incorrect Details" });
+    }
+
+    const user = checkDetails.rows[0];
+    
+    //now i want to Compare entered plain-text password with stored hashed password
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatch) {
+      return res.status(400).render("loginUser.ejs", { error: "Incorrect Details" });
+    }
+
+    //to save user id in session on successful login
+    req.session.userId = user.id;
+
+    console.log("User logged in with ID:", req.session.userId);
+    return res.redirect("/userDashboard");
+
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("loginUser.ejs", { error: "Internal Server Error" });
+  }
+});
+
 //to render the userDashboard page
-app.get("/userDashboard", (req, res) => {
+app.get("/userDashboard", async (req, res) => {
   if (!req.session.userId) {
     return res.redirect("/");
   }
   try {
-      return res.status(200).render("userDashboard.ejs");
-    } catch (error) {
+    const getMenuArray = await db.query("SELECT * FROM inventory_menu_table");
+    const menuRows = getMenuArray.rows;
+
+    const updatedMenu = menuRows.map(item => {
+        return {
+          ...item,
+          inventory_status: item.inventory_quantity === 0 ? "out of stock" : item.inventory_status
+        };
+      });
+
+      return res.render("userDashboard.ejs", {
+        menuArray: updatedMenu,
+        message: null
+      });
+
+  } catch (error) {
       console.log("An error occured: ", error.stack);
-      return res.status(500).render("userDashboard.ejs", {error: "Internal Server Error"})
-    }
+       return res.status(500).render("userDashboard.ejs", {
+        menuArray: [],
+        message: "Error loading dashboard."
+    })
+  }
+    
+});
+
+// order now route handler
+
+//to render the bookReservation page
+app.get("/bookReservation", async (req, res) => {
+  if (!req.session.userId) {
+    return res.redirect("/");
+  }
+  try {
+    const getReservationArray = await db.query("SELECT * FROM available_reservation_table");
+    const reservationRows = getReservationArray.rows;
+
+    const updatedReservations = reservationRows.map(item => {
+        return {
+          ...item,
+          reservation_status: item.reservation_quantity === 0 ? "out of stock" : item.reservation_status
+        };
+      });
+
+      return res.render("userDashboard.ejs", {
+        reservationsArray: updatedReservations,
+        message: null
+      });
+
+  } catch (error) {
+      console.log("An error occured: ", error.stack);
+       return res.status(500).render("userDashboard.ejs", {
+        reservationsArray: [],
+        message: "Error loading dashboard."
+    })
+  }
+    
 });
 
 function hasInvalidEmailDomain(email) {

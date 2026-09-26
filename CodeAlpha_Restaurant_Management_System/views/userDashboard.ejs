@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <title>Best Restaurant Management System</title>
+</head>
+<body>
+    <div class="nav">
+        <h2 class="">Welcome to Best Restaurant Management System</h2>
+        <div class="userflex">
+            <h3 class="">User</h3>
+            <div>
+                <form action="/logout" method="POST">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="menu-cont">
+        <% if (locals.message) { %>
+                <p><%= message %></p>
+        <% } %>
+
+        <h1 class="culinary"> Our Culinary Menu </h1>
+        <p>We make and serve the best meals in Best Restaurant</p>
+        <div class="menu-head ">
+            <a class="btn-link" href="#menuSection">View Menu list</a>
+            <a class="btn-link" href="/bookReservation">Book a Reservation</a>
+        </div>
+    </div>
+
+    <div id="menuSection">
+        <% if (locals.menuArray){  %>
+            <% menuArray.forEach(item => { %> 
+                <div class="card-cont">
+                    <div class="card-image">
+
+                    </div>
+
+                    <div class="card-content">
+                        <h2 class="menu-name"> <%= item.inventory_name %> </h2>
+                        <p class="menu-quantity"> <%= item.inventory_quantity %> left </p>
+                    </div>
+
+                    <div class="card-action">
+                        <div class="incremental-buttons">
+                            <button class="add-quantity">+</button> <p></p>
+                            <button class="subtract-quantity">-</button>
+                        </div>
+                        <div>
+                            <form action="/ordernow" method="POST">
+                                <input type="hidden" name="itemId" value="<%= item.id %>">
+                                <button type="submit" class="btn-link">Order Now</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </div>
+</body>
+</html>

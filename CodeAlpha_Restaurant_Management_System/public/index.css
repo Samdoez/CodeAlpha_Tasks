@@ -18,9 +18,10 @@
     color: #eff5f6;
 }
 .nav{
-    background-color: #bcdfe7;
+    background-color: #166dca;
+    color: #eff5f6;
     height: 12vh;
-    padding: 1.2em;
+    padding: 1.2em 3em;
     display: flex;
     justify-content: space-between;
 }
@@ -34,22 +35,20 @@
 .main-cont h2{
     color: #166dca;
 }
-.event-cont{
+.menu-cont{
     background-color: #eff5f6;
     min-height: 15vh;
-    padding: 1em;
+    padding: 1.2em 3em;
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
-.event-head{
+.culinary{
+    margin-bottom: 0.2em;
+}
+.menu-head{
     margin-bottom: 1em;
     padding-top: 0.5em;
-}
-
-.text{
-    max-width: 35%;
-    text-align: center;
 }
 .reg-cont{
     background-color: #afdde5;
@@ -94,6 +93,24 @@
 .btn-link:hover:not(:disabled):not(.disabled) {
     background-color: #166dca;
 }
+.logout-btn{
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+.logout-btn:hover:not(:disabled):not(.disabled) {
+    background-color: white;
+    color: #007bff;
+}
+
 .link-login{
     margin-top: 0.5em;
     text-decoration: none;
@@ -193,7 +210,7 @@
 }
 
 /* admin css */
-.adminflex{
+.adminflex, .userflex{
     display: flex;
     justify-content: center;
     align-items: center;
