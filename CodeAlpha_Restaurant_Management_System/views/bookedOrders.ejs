@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <title>Best Restaurant Management System</title>
+</head>
+<body>
+    <div class="nav">
+        <h2 class="">Welcome to Best Restaurant Management System</h2>
+        <div class="userflex">
+            <h3 class="">User</h3>
+            <div>
+                <form action="/logout" method="POST">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="menu-cont">
+        <% if (locals.message) { %>
+            <p><%= message %></p>
+        <% } %>
+
+        <h1 class="culinary"> My Booked Orders </h1>
+        <p>We make and serve the best meals in Best Restaurant</p>
+        <div class="menu-head ">
+            <a class="btn-link" href="/userDashboard">Back</a>
+        </div>
+
+        <div id="bookedOrdersSection">
+            <% if (locals.bookedOrdersArray && bookedOrdersArray.length > 0) { %>
+                <div class="table-wrap">
+                    <table class="reg-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Total Price</th>
+                                <th>Status</th>
+                                <th>Date Ordered</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% bookedOrdersArray.forEach((item, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= item.inventory_name %></td>
+                                    <td><%= item.quantity %></td>
+                                    <td>₦<%= Number(item.total_price).toLocaleString('en-NG', { minimumFractionDigits: 2 }) %></td>
+                                    <td><%= item.status %></td>
+                                    <td><%= item.formatted_date %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p>You haven't ordered anything yet.</p>
+            <% } %>
+        </div>
+</body>
+</html>

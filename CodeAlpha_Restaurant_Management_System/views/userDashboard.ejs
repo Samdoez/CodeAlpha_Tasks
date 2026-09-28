@@ -32,6 +32,7 @@
         <div class="menu-head ">
             <a class="btn-link" href="#menuSection">View Menu list</a>
             <a class="btn-link" href="/bookReservation">Book a Reservation</a>
+            <a class="btn-link" href="/bookedOrders">View Completed Orders</a>
         </div>
 
         <div id="menuSection">
@@ -44,7 +45,10 @@
                             </div>
 
                             <div class="card-content">
-                                <h2 class="menu-name"> <%= item.inventory_name %> </h2>
+                                <div class="name-pice flex">
+                                    <h2 class="menu-name"> <%= item.inventory_name %> </h2> 
+                                    <h2 class="menu-name"> #<%= item.inventory_price %> </h2> 
+                                </div>
                                 <p class="menu-quantity"> <%= item.inventory_quantity %> left </p>
                             </div>
 
@@ -55,7 +59,7 @@
                                     <button type="button" class="btn-link add-quantity">+</button>
                                 </div>
                                 <div>
-                                    <form action="/ordernow" method="POST" class="order-form" id="orderForm-<%= item.id %>">
+                                    <form action="/ordernow" method="POST" class="order-form" id="orderForm-<%= item.id %>" data-price="<%= item.inventory_price %>">
                                         <input type="hidden" name="itemId" value="<%= item.id %>">
                                         <input type="hidden" name="quantity" class="quantity-input" value="1">
                                         <button type="button" class="btn-link" onclick="openConfirmModal('<%= item.id %>', '<%= item.inventory_name %>')">Order Now</button>
@@ -74,11 +78,17 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeConfirmModal()">&times;</span>
             <h2>Confirm Your Order</h2>
-            <p>Do you want to order <span id="confirmQuantity"></span> <span id="confirmItemName"></span>?</p>
-            <div class="modal-actions">
-                <button type="button" class="btn-link" onclick="confirmOrder()">Yes</button>
+            <div id="confirmQuestion">
+                <p>Do you want to order <span id="confirmQuantity"></span> <span id="confirmItemName"></span>?</p>
+                <p>Total: <strong id="confirmTotal"></strong></p>
+            </div>
+
+            <div class="modal-actions" id="modalActions">
+                <button type="button" class="btn-link" id="yesBtn" onclick="confirmOrder()">Yes</button>
                 <button type="button" class="btn-link" onclick="closeConfirmModal()">No</button>
             </div>
+            <p id="orderError" class="err-style" style="display: none;"></p>
+            <p id="orderSuccess" class="success-style" style="display: none;"></p>
         </div>
     </div>
 
@@ -120,8 +130,19 @@
             document.getElementById('confirmQuantity').textContent = quantity;
             document.getElementById('confirmItemName').textContent = itemName;
 
+            const price = Number(form.dataset.price);
+            const total = price * Number(quantity);
+
+            document.getElementById('confirmTotal').textContent =
+                '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
             pendingFormId = `orderForm-${itemId}`;
             document.getElementById('confirmOrderModal').style.display = 'flex';
+            document.getElementById('confirmQuestion').style.display = 'block';
+            document.getElementById('modalActions').style.display = 'flex';
+            document.getElementById('orderSuccess').style.display = 'none';
+            document.getElementById('orderError').style.display = 'none';
+            document.getElementById('yesBtn').disabled = false;
         }
 
         function closeConfirmModal() {
@@ -129,9 +150,46 @@
             document.getElementById('confirmOrderModal').style.display = 'none';
         }
 
-        function confirmOrder() {
-            if (pendingFormId) {
-                document.getElementById(pendingFormId).submit();
+       async function confirmOrder() {
+            if (!pendingFormId) return;
+
+            const form = document.getElementById(pendingFormId);
+            const errorEl = document.getElementById('orderError');
+            const successEl = document.getElementById('orderSuccess');
+            const yesBtn = document.getElementById('yesBtn');
+
+            errorEl.style.display = 'none';
+            yesBtn.disabled = true; // stops a double-click from placing two orders
+
+            try {
+                const response = await fetch('/orderNow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        itemId: form.querySelector('[name="itemId"]').value,
+                        quantity: form.querySelector('.quantity-input').value
+                    })
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    errorEl.textContent = data.error;
+                    errorEl.style.display = 'block';
+                    yesBtn.disabled = false; // let them try again
+                    return;
+                }
+
+                // success: swap the question + buttons for a confirmation message
+                document.getElementById('confirmQuestion').style.display = 'none';
+                document.getElementById('modalActions').style.display = 'none';
+                successEl.textContent = 'Order confirmed! Taking you to your orders...';
+                successEl.style.display = 'block';
+
+                setTimeout(() => { window.location.href = '/bookedOrders'; }, 1500);
+            } catch (err) {
+                errorEl.textContent = "Network error. Please try again.";
+                errorEl.style.display = 'block';
+                yesBtn.disabled = false;
             }
         }
     </script>

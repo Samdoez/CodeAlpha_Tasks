@@ -22,18 +22,19 @@ app.use( session({
   })
 );
 
-const db = new pg.Client({
+const db = new pg.Pool({
   user: process.env.PG_user,
-  host: process.env.PG_HOST,  
+  host: process.env.PG_HOST,
   database: process.env.PG_DATABASE,
   password: process.env.PG_PASSWORD,
   port: process.env.PG_PORT,
 });
-db.connect((err) => {
+db.connect((err, client, release) => {
   if (err) {
     console.error("DB connection error:", err.stack);
   } else {
     console.log("Successfully connected to the PostgreSQL DB");
+    release(); 
   }
 });
 
@@ -154,7 +155,7 @@ app.get("/userDashboard", async (req, res) => {
     return res.redirect("/");
   }
   try {
-    const getMenuArray = await db.query("SELECT * FROM inventory_menu_table");
+    const getMenuArray = await db.query("SELECT * FROM inventory_menu_table ORDER BY id");
     const menuRows = getMenuArray.rows;
 
     const updatedMenu = menuRows.map(item => {
@@ -180,7 +181,95 @@ app.get("/userDashboard", async (req, res) => {
 });
 
 // order now route handler
+app.post("/orderNow", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Please log in first." });
+  }
 
+  const itemId = Number(req.body.itemId);
+  const quantity = Number(req.body.quantity);
+
+  if (!Number.isInteger(itemId) || !Number.isInteger(quantity) || quantity < 1) {
+    return res.status(400).json({ error: "Invalid order." });
+  }
+
+  const client = await db.connect();                       
+  try {
+    await client.query("BEGIN");                           
+
+    const result = await client.query(                     
+      `UPDATE inventory_menu_table
+          SET inventory_quantity = inventory_quantity - $1,
+              inventory_status = CASE
+                  WHEN inventory_quantity - $1 = 0 THEN 'out of stock'
+                  ELSE inventory_status
+              END
+          WHERE id = $2 AND inventory_quantity >= $1
+          RETURNING id, inventory_quantity, inventory_status, inventory_price;`,
+      [quantity, itemId]
+    );
+
+    if (result.rows.length === 0) {                       
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Order failed: not enough stock." });
+    }
+
+    const totalPrice = (Number(result.rows[0].inventory_price) * quantity).toFixed(2);  
+
+    await client.query(                                   
+      `INSERT INTO activity_registration_table
+         (user_id, inventory_id, activity_type, quantity, total_price, status)
+       VALUES ($1, $2, 'FOOD_ORDER', $3, $4, 'Completed')`,
+      [req.session.userId, itemId, quantity, totalPrice]
+    );
+
+    await client.query("COMMIT");                  
+    console.log("Order Successful")       
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    await client.query("ROLLBACK");                       
+    console.error("Order error:", error.stack);
+    return res.status(500).json({ error: "Something went wrong. Please try again." });
+  } finally {
+    client.release();                                     
+  }
+});
+
+// GET handler for the redirect to booked orders
+app.get("/bookedOrders", async (req, res) => {
+  if (!req.session.userId) {
+    return res.redirect("/");
+  }
+
+  const userID = req.session.userId
+  try {
+    const getCompletedOrders = await db.query("SELECT * FROM activity_registration_table WHERE user_id = $1",
+    [userID]);
+
+    if (getCompletedOrders.rows.length === 0) {
+      return res.status(400).render("bookedOrders.ejs", {error: "No order yet, Book now!"})
+    }
+    
+    const bookedOrdersArray = getCompletedOrders.rows;
+    return res.status(200).render("bookedOrders.ejs", {bookedOrdersArray: bookedOrdersArray});
+  } catch (error) {
+    console.log("An error occured: ", error.stack);
+    return res.status(500).render("createAccount.ejs", {error: "Internal Server Error"})
+  }
+});
+
+// POST handler for a delete Order from the bookedOrder page
+app.post("/bookedOrders", (req, res) => {
+  if (!req.session.userId) {
+      return res.redirect("/");
+  }
+  try {
+      return res.status(200).render("createAccount.ejs");
+  } catch (error) {
+      console.log("An error occured: ", error.stack);
+      return res.status(500).render("createAccount.ejs", {error: "Internal Server Error"})
+  }
+});
 
 //to render the bookReservation page
 app.get("/bookReservation", async (req, res) => {
@@ -188,7 +277,7 @@ app.get("/bookReservation", async (req, res) => {
     return res.redirect("/");
   }
   try {
-    const getReservationArray = await db.query("SELECT * FROM available_reservation_table");
+    const getReservationArray = await db.query("SELECT * FROM available_reservation_table ORDER BY id");
     const reservationRows = getReservationArray.rows;
 
     const updatedReservations = reservationRows.map(item => {
