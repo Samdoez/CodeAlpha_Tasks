@@ -6,7 +6,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="/index.css">
     <title>Best Restaurant Management System</title>
 </head>
 <body>
@@ -33,36 +33,107 @@
             <a class="btn-link" href="#menuSection">View Menu list</a>
             <a class="btn-link" href="/bookReservation">Book a Reservation</a>
         </div>
-    </div>
 
-    <div id="menuSection">
-        <% if (locals.menuArray){  %>
-            <% menuArray.forEach(item => { %> 
-                <div class="card-cont">
-                    <div class="card-image">
+        <div id="menuSection">
+            <% if (locals.menuArray){  %>
+                <div class="menu-grid">
+                    <% menuArray.forEach(item => { %> 
+                        <div class="card-cont">
+                            <div class="card-image">
+                                <img src="<%= item.inventory_image_url %>" alt="<%= item.inventory_name %>">
+                            </div>
 
-                    </div>
+                            <div class="card-content">
+                                <h2 class="menu-name"> <%= item.inventory_name %> </h2>
+                                <p class="menu-quantity"> <%= item.inventory_quantity %> left </p>
+                            </div>
 
-                    <div class="card-content">
-                        <h2 class="menu-name"> <%= item.inventory_name %> </h2>
-                        <p class="menu-quantity"> <%= item.inventory_quantity %> left </p>
-                    </div>
-
-                    <div class="card-action">
-                        <div class="incremental-buttons">
-                            <button class="add-quantity">+</button> <p></p>
-                            <button class="subtract-quantity">-</button>
+                            <div class="card-action">
+                                <div class="incremental-buttons flex" data-item-id="<%= item.id %>">
+                                    <button type="button" class="btn-link subtract-quantity">-</button>
+                                    <p class="quantity-display">1</p>
+                                    <button type="button" class="btn-link add-quantity">+</button>
+                                </div>
+                                <div>
+                                    <form action="/ordernow" method="POST" class="order-form" id="orderForm-<%= item.id %>">
+                                        <input type="hidden" name="itemId" value="<%= item.id %>">
+                                        <input type="hidden" name="quantity" class="quantity-input" value="1">
+                                        <button type="button" class="btn-link" onclick="openConfirmModal('<%= item.id %>', '<%= item.inventory_name %>')">Order Now</button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <form action="/ordernow" method="POST">
-                                <input type="hidden" name="itemId" value="<%= item.id %>">
-                                <button type="submit" class="btn-link">Order Now</button>
-                            </form>
-                        </div>
-                    </div>
+                    <% }) %>
                 </div>
-            <% }) %>
-        <% } %>
+            <% } %>
+        </div>
     </div>
+
+    <%#  this is my confirmation modal  %>
+    <div id="confirmOrderModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeConfirmModal()">&times;</span>
+            <h2>Confirm Your Order</h2>
+            <p>Do you want to order <span id="confirmQuantity"></span> <span id="confirmItemName"></span>?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-link" onclick="confirmOrder()">Yes</button>
+                <button type="button" class="btn-link" onclick="closeConfirmModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <%# script for my incremental buttons %>
+    <script> 
+        document.querySelectorAll('.incremental-buttons').forEach(container => {
+            const display = container.querySelector('.quantity-display');
+            const addBtn = container.querySelector('.add-quantity');
+            const subtractBtn = container.querySelector('.subtract-quantity');
+
+            const hiddenInput = container.parentElement.querySelector('.quantity-input');
+
+            let quantity = 1;
+
+            addBtn.addEventListener('click', () => {
+                quantity++;
+                display.textContent = quantity;
+                hiddenInput.value = quantity;
+            });
+
+            subtractBtn.addEventListener('click', () => {
+                if (quantity > 1) {
+                    quantity--;
+                    display.textContent = quantity;
+                    hiddenInput.value = quantity;
+                }
+            });
+        });
+    </script>
+
+    <%# script for my confirmation maodal %>
+    <script>
+        let pendingFormId = null; // tracks which form we're waiting to confirm
+
+        function openConfirmModal(itemId, itemName) {
+            const form = document.getElementById(`orderForm-${itemId}`);
+            const quantity = form.querySelector('.quantity-input').value;
+
+            document.getElementById('confirmQuantity').textContent = quantity;
+            document.getElementById('confirmItemName').textContent = itemName;
+
+            pendingFormId = `orderForm-${itemId}`;
+            document.getElementById('confirmOrderModal').style.display = 'flex';
+        }
+
+        function closeConfirmModal() {
+            pendingFormId = null;
+            document.getElementById('confirmOrderModal').style.display = 'none';
+        }
+
+        function confirmOrder() {
+            if (pendingFormId) {
+                document.getElementById(pendingFormId).submit();
+            }
+        }
+    </script>
 </body>
 </html>

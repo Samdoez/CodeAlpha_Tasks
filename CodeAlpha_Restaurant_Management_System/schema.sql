@@ -15,6 +15,7 @@ CREATE TABLE inventory_menu_table (
     inventory_name VARCHAR(150) UNIQUE NOT NULL,
     inventory_quantity INTEGER NOT NULL CHECK (inventory_quantity >= 0),
     inventory_price NUMERIC(10, 2) NOT NULL,
+    inventory_image_url VARCHAR(255) NOT NULL,
     inventory_status VARCHAR(50) DEFAULT 'instock'
 );
 
