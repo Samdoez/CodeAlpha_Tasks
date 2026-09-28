@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <title>Best Restaurant Management System</title>
+</head>
+<body>
+    <div class="nav">
+        <h2 class="">Welcome to Best Restaurant Management System</h2>
+        <div class="userflex">
+            <h3 class="">User</h3>
+            <div>
+                <form action="/logout" method="POST">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="menu-cont">
+        <% if (locals.message) { %>
+                <p><%= message %></p>
+        <% } %>
+
+        <h1 class="culinary"> Our Reservations </h1>
+        <p>We own the Best Reservations in the City </p>
+        <div class="menu-head ">
+            <a class="btn-link" href="#menuSection">Book a Reservations</a>
+            <a class="btn-link" href="/bookedOrders">View Completed Orders</a>
+            <a class="btn-link" href="/userDashboard">Order Food</a>
+        </div>
+
+        <div id="menuSection">
+            <% if (locals.reservationsArray){  %>
+                <div class="menu-grid">
+                    <% reservationsArray.forEach(item => { %> 
+                        <div class="card-cont">
+                            <div class="card-image">
+                                <img src="<%= item.reservation_image_url %>" alt="<%= item.reservation_name %>">
+                            </div>
+
+                            <div class="card-content">
+                                <div class="name-pice flex">
+                                    <h2 class="menu-name"> <%= item.reservation_name %> </h2> 
+                                    <h2 class="menu-name"> ₦<%= Number(item.reservation_price).toLocaleString('en-NG') %></h2> 
+                                </div>
+                                <p class="menu-quantity"> <%= item.reservation_quantity %> left </p>
+                            </div>
+
+                            <div class="card-action">
+                                <div class="incremental-buttons flex" data-item-id="<%= item.id %>">
+                                    <button type="button" class="btn-link subtract-quantity">-</button>
+                                    <p class="quantity-display">1</p>
+                                    <button type="button" class="btn-link add-quantity">+</button>
+                                </div>
+                                <div>
+                                    <form action="/orderReservation" method="POST" class="order-form" id="orderForm-<%= item.id %>" data-price="<%= item.reservation_price %>">
+                                        <input type="hidden" name="itemId" value="<%= item.id %>">
+                                        <input type="hidden" name="quantity" class="quantity-input" value="1">
+                                        <button type="button" class="btn-link" onclick="openConfirmModal('<%= item.id %>', '<%= item.reservation_name %>')">Reserve Now</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <%#  this is my confirmation modal  %>
+    <div id="confirmOrderModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeConfirmModal()">&times;</span>
+            <h2>Confirm Your Reservation</h2>
+            <div id="confirmQuestion">
+                <p>Do you want to Book <span id="confirmQuantity"></span> <span id="confirmItemName"></span>?</p>
+                <p>Total: <strong id="confirmTotal"></strong></p>
+            </div>
+
+            <div class="modal-actions" id="modalActions">
+                <button type="button" class="btn-link" id="yesBtn" onclick="confirmOrder()">Yes</button>
+                <button type="button" class="btn-link" onclick="closeConfirmModal()">No</button>
+            </div>
+            <p id="orderError" class="err-style" style="display: none;"></p>
+            <p id="orderSuccess" class="success-style" style="display: none;"></p>
+        </div>
+    </div>
+
+    <%# script for my incremental buttons %>
+    <script> 
+        document.querySelectorAll('.incremental-buttons').forEach(container => {
+            const display = container.querySelector('.quantity-display');
+            const addBtn = container.querySelector('.add-quantity');
+            const subtractBtn = container.querySelector('.subtract-quantity');
+
+            const hiddenInput = container.parentElement.querySelector('.quantity-input');
+
+            let quantity = 1;
+
+            addBtn.addEventListener('click', () => {
+                quantity++;
+                display.textContent = quantity;
+                hiddenInput.value = quantity;
+            });
+
+            subtractBtn.addEventListener('click', () => {
+                if (quantity > 1) {
+                    quantity--;
+                    display.textContent = quantity;
+                    hiddenInput.value = quantity;
+                }
+            });
+        });
+    </script>
+
+    <%# script for my confirmation maodal %>
+    <script>
+        let pendingFormId = null; // tracks which form we're waiting to confirm
+
+        function openConfirmModal(itemId, itemName) {
+            const form = document.getElementById(`orderForm-${itemId}`);
+            const quantity = form.querySelector('.quantity-input').value;
+
+            document.getElementById('confirmQuantity').textContent = quantity;
+            document.getElementById('confirmItemName').textContent = itemName;
+
+            const price = Number(form.dataset.price);
+            const total = price * Number(quantity);
+
+            document.getElementById('confirmTotal').textContent =
+                '₦' + total.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            pendingFormId = `orderForm-${itemId}`;
+            document.getElementById('confirmOrderModal').style.display = 'flex';
+            document.getElementById('confirmQuestion').style.display = 'block';
+            document.getElementById('modalActions').style.display = 'flex';
+            document.getElementById('orderSuccess').style.display = 'none';
+            document.getElementById('orderError').style.display = 'none';
+            document.getElementById('yesBtn').disabled = false;
+        }
+
+        function closeConfirmModal() {
+            pendingFormId = null;
+            document.getElementById('confirmOrderModal').style.display = 'none';
+        }
+
+       async function confirmOrder() {
+            if (!pendingFormId) return;
+
+            const form = document.getElementById(pendingFormId);
+            const errorEl = document.getElementById('orderError');
+            const successEl = document.getElementById('orderSuccess');
+            const yesBtn = document.getElementById('yesBtn');
+
+            errorEl.style.display = 'none';
+            yesBtn.disabled = true; // stops a double-click from placing two orders
+
+            try {
+                const response = await fetch('/orderReservation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        itemId: form.querySelector('[name="itemId"]').value,
+                        quantity: form.querySelector('.quantity-input').value
+                    })
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    errorEl.textContent = data.error;
+                    errorEl.style.display = 'block';
+                    yesBtn.disabled = false; // let them try again
+                    return;
+                }
+
+                // success: swap the question + buttons for a confirmation message
+                document.getElementById('confirmQuestion').style.display = 'none';
+                document.getElementById('modalActions').style.display = 'none';
+                successEl.textContent = 'Order confirmed! Taking you to your orders...';
+                successEl.style.display = 'block';
+
+                setTimeout(() => { window.location.href = '/bookedOrders'; }, 1500);
+            } catch (err) {
+                errorEl.textContent = "Network error. Please try again.";
+                errorEl.style.display = 'block';
+                yesBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

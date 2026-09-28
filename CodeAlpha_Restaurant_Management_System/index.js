@@ -48,7 +48,7 @@ app.get("/", (req, res) =>{
     }
 });
 
-//to handle all verification when i am submiting a form
+//to handle all verification when creating an account 
 app.post("/createAccount", async (req,res) => {
   const fname = (req.body.FName || "").toLowerCase().trim();
   const lname = (req.body.LName || "").toLowerCase().trim();
@@ -227,48 +227,73 @@ app.post("/orderNow", async (req, res) => {
     console.log("Order Successful")       
     return res.status(200).json({ success: true });
   } catch (error) {
-    await client.query("ROLLBACK");                       
-    console.error("Order error:", error.stack);
-    return res.status(500).json({ error: "Something went wrong. Please try again." });
+      await client.query("ROLLBACK");                       
+      console.error("Order error:", error.stack);
+      return res.status(500).json({ error: "Something went wrong. Please try again." });
   } finally {
     client.release();                                     
   }
 });
 
-// GET handler for the redirect to booked orders
-app.get("/bookedOrders", async (req, res) => {
-  if (!req.session.userId) {
-    return res.redirect("/");
-  }
-
-  const userID = req.session.userId
-  try {
-    const getCompletedOrders = await db.query("SELECT * FROM activity_registration_table WHERE user_id = $1",
-    [userID]);
-
-    if (getCompletedOrders.rows.length === 0) {
-      return res.status(400).render("bookedOrders.ejs", {error: "No order yet, Book now!"})
-    }
-    
-    const bookedOrdersArray = getCompletedOrders.rows;
-    return res.status(200).render("bookedOrders.ejs", {bookedOrdersArray: bookedOrdersArray});
-  } catch (error) {
-    console.log("An error occured: ", error.stack);
-    return res.status(500).render("createAccount.ejs", {error: "Internal Server Error"})
-  }
-});
-
 // POST handler for a delete Order from the bookedOrder page
-app.post("/bookedOrders", (req, res) => {
+app.post("/deleteOrder", async(req, res) => {
   if (!req.session.userId) {
       return res.redirect("/");
   }
-  try {
-      return res.status(200).render("createAccount.ejs");
-  } catch (error) {
-      console.log("An error occured: ", error.stack);
-      return res.status(500).render("createAccount.ejs", {error: "Internal Server Error"})
+  const orderId = Number(req.body.orderId);
+
+  if (!Number.isInteger(orderId)) {
+    return res.status(400).render("bookedOrders.ejs", { bookedOrdersArray: [], message: "Invalid order." });
   }
+
+  const client = await db.connect();
+  try {
+      await client.query("BEGIN");
+
+      const deleted = await client.query(
+        `DELETE FROM activity_registration_table
+        WHERE id = $1 AND user_id = $2
+        RETURNING activity_type, inventory_id, reservation_id, quantity`,
+        [orderId, req.session.userId]
+      );
+
+      console.log("Deleted row:", deleted.rows);   // <-- add this one line here
+
+      if (deleted.rows.length > 0) {
+        const row = deleted.rows[0];
+
+        if (row.activity_type === 'FOOD_ORDER') {
+          await client.query(
+            `UPDATE inventory_menu_table
+            SET inventory_quantity = inventory_quantity + $1,
+                inventory_status = 'instock'
+            WHERE id = $2`,
+            [row.quantity, row.inventory_id]
+          );
+        } else {
+          await client.query(
+            `UPDATE available_reservation_table
+            SET reservation_quantity = reservation_quantity + $1,
+                reservation_status = 'available'
+            WHERE id = $2`,
+            [row.quantity, row.reservation_id]
+          );
+        }
+      }
+
+      await client.query("COMMIT");
+      console.log("Delete Successful")
+      return res.redirect("/bookedOrders");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("Delete order error:", error.stack);
+        return res.status(500).render("bookedOrders.ejs", 
+          { bookedOrdersArray: [], 
+            message: "Could not delete the order."
+          });
+    } finally {
+      client.release();
+    }
 });
 
 //to render the bookReservation page
@@ -287,7 +312,7 @@ app.get("/bookReservation", async (req, res) => {
         };
       });
 
-      return res.render("userDashboard.ejs", {
+      return res.render("bookReservation.ejs", {
         reservationsArray: updatedReservations,
         message: null
       });
@@ -299,7 +324,104 @@ app.get("/bookReservation", async (req, res) => {
         message: "Error loading dashboard."
     })
   }
+});
+
+//to  the order reservation table
+app.post("/orderReservation", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Please log in first." });
+  }
+
+  const reservationId = Number(req.body.itemId);
+  const quantity = Number(req.body.quantity);
+
+  if (!Number.isInteger(reservationId) || !Number.isInteger(quantity) || quantity < 1) {
+    return res.status(400).json({ error: "Invalid reservation." });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `UPDATE available_reservation_table
+          SET reservation_quantity = reservation_quantity - $1,
+              reservation_status = CASE
+                  WHEN reservation_quantity - $1 = 0 THEN 'out of stock'
+                  ELSE reservation_status
+              END
+          WHERE id = $2 AND reservation_quantity >= $1
+          RETURNING id, reservation_price;`,
+      [quantity, reservationId]
+    );
+
+    if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Reservation failed: not enough tables available." });
+    }
+
+    const totalPrice = (Number(result.rows[0].reservation_price) * quantity).toFixed(2);
+
+    await client.query(
+      `INSERT INTO activity_registration_table
+         (user_id, reservation_id, activity_type, quantity, total_price, status)
+       VALUES ($1, $2, 'TABLE_RESERVATION', $3, $4, 'Completed')`,
+      [req.session.userId, reservationId, quantity, totalPrice]
+    );
+
+    await client.query("COMMIT");
+    console.log("Order Successful") 
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    await client.query("ROLLBACK");
+      console.error("Reservation error:", error.stack);
+      return res.status(500).json({ error: "Something went wrong. Please try again." });
+  } finally {
+    client.release();
+  }
+});
+
+// GET handler for the redirect to booked orders
+app.get("/bookedOrders", async (req, res) => {
+  if (!req.session.userId) {
+    return res.redirect("/");
+  }
+
+  try {
+    const getCompletedOrders = await db.query(
+     `SELECT a.id, a.activity_type,
+              COALESCE(i.inventory_name, r.reservation_name) AS item_name,
+              a.quantity, a.total_price, a.status,
+              TO_CHAR(a.booked_date, 'DD Mon YYYY, HH12:MI AM') AS formatted_date
+       FROM activity_registration_table a
+       LEFT JOIN inventory_menu_table i ON i.id = a.inventory_id
+       LEFT JOIN available_reservation_table r ON r.id = a.reservation_id
+       WHERE a.user_id = $1
+       ORDER BY a.booked_date DESC`,
+      [req.session.userId]);
     
+    const bookedOrdersArray = getCompletedOrders.rows;
+    return res.status(200).render("bookedOrders.ejs", {bookedOrdersArray: bookedOrdersArray});
+  } catch (error) {
+    console.log("An error occured: ", error.stack);
+    return res.status(500).render("bookedOrders.ejs", {
+      bookedOrdersArray: [],
+      message: "Could not load your orders. Please try again."
+    });
+  }
+});
+
+// to log out the current user
+app.post("/logout", (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Logout error:", err);
+            return res.status(500).render("index.ejs", { error: "Could not log out" });
+        }
+        console.log("logout Successfully");
+        res.clearCookie("connect.sid");
+        res.redirect("/loginPage");
+    });
 });
 
 function hasInvalidEmailDomain(email) {

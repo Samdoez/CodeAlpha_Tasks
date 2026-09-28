@@ -25,6 +25,7 @@ CREATE TABLE available_reservation_table (
     reservation_name VARCHAR(150) UNIQUE NOT NULL, 
     reservation_quantity INTEGER NOT NULL CHECK (reservation_quantity >= 0), 
     reservation_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    reservation_image_url VARCHAR(255) NOT NULL,
     reservation_status VARCHAR(50) DEFAULT 'available'
 );
 

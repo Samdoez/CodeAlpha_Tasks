@@ -47,7 +47,7 @@
                             <div class="card-content">
                                 <div class="name-pice flex">
                                     <h2 class="menu-name"> <%= item.inventory_name %> </h2> 
-                                    <h2 class="menu-name"> #<%= item.inventory_price %> </h2> 
+                                    <h2 class="menu-name"> ₦<%= Number(item.inventory_price).toLocaleString('en-NG') %></h2> 
                                 </div>
                                 <p class="menu-quantity"> <%= item.inventory_quantity %> left </p>
                             </div>

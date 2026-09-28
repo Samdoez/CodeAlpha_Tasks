@@ -30,7 +30,8 @@
         <h1 class="culinary"> My Booked Orders </h1>
         <p>We make and serve the best meals in Best Restaurant</p>
         <div class="menu-head ">
-            <a class="btn-link" href="/userDashboard">Back</a>
+            <a class="btn-link" href="/userDashboard">Back to Order</a>
+            <a class="btn-link" href="/bookReservation">Back to Reservation</a>
         </div>
 
         <div id="bookedOrdersSection">
@@ -45,25 +46,67 @@
                                 <th>Total Price</th>
                                 <th>Status</th>
                                 <th>Date Ordered</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% bookedOrdersArray.forEach((item, index) => { %>
                                 <tr>
                                     <td><%= index + 1 %></td>
-                                    <td><%= item.inventory_name %></td>
+                                    <td><%= item.item_name %></td>
                                     <td><%= item.quantity %></td>
                                     <td>₦<%= Number(item.total_price).toLocaleString('en-NG', { minimumFractionDigits: 2 }) %></td>
                                     <td><%= item.status %></td>
                                     <td><%= item.formatted_date %></td>
+                                    <td>
+                                        <button type="button" class="delete-btn"
+                                            data-order-id="<%= item.id %>"
+                                            data-item-name="<%= item.item_name %>"
+                                            onclick="openDeleteModal(this)">Delete
+                                        </button>
+                                    </td>
                                 </tr>
                             <% }) %>
                         </tbody>
                     </table>
                 </div>
-            <% } else { %>
-                <p>You haven't ordered anything yet.</p>
-            <% } %>
+                <% } else if (!locals.message) { %>
+                    <p>You haven't ordered anything yet.</p>
+                <% } %>
         </div>
+
+        <%# modal for my delete button %>
+        <div id="deleteOrderModal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+                <h2>Delete Order</h2>
+                <p>Are you sure you want to delete your order for <strong id="deleteItemName"></strong>? The items will be returned to stock.</p>
+
+                    <form action="/deleteOrder" method="POST" id="deleteOrderForm">
+                    <input type="hidden" name="orderId" id="deleteOrderId" value="">
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-link">Yes, Delete</button>
+                        <button type="button" class="btn-link" onclick="closeDeleteModal()">No</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <%# script for delete modal %>
+        <script>
+            function openDeleteModal(btn) {
+                document.getElementById('deleteOrderId').value = btn.dataset.orderId;
+                document.getElementById('deleteItemName').textContent = btn.dataset.itemName;
+                document.getElementById('deleteOrderModal').style.display = 'flex';
+            }
+
+            function closeDeleteModal() {
+                document.getElementById('deleteOrderModal').style.display = 'none';
+            }
+
+            window.addEventListener('pageshow', (e) => {
+                if (e.persisted) closeDeleteModal();
+            });
+        </script>
 </body>
 </html>
