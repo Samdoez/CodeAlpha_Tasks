@@ -4,6 +4,7 @@ import pg from "pg";
 import env from "dotenv";
 import session from "express-session";
 import bcrypt from "bcrypt";
+import { error } from "node:console";
 
 const app = express();
 const port = 3000;
@@ -408,6 +409,139 @@ app.get("/bookedOrders", async (req, res) => {
       bookedOrdersArray: [],
       message: "Could not load your orders. Please try again."
     });
+  }
+});
+
+//to navigate to the Admin loginPage setup
+app.get("/adminloginPage", (req,res) =>{
+    try {
+        return res.render("adminLogin.ejs");
+    } catch (error) {
+        console.log("An error occured: ", error.stack);
+        return res.status(500).render("adminLogin.ejs", {error: "Internal Server Error"})
+    }
+});
+
+//to login an Admin Account
+app.post("/adminLogin", async (req,res) =>{
+  const email = (req.body.email || "").toLowerCase().trim();
+  const password = (req.body.password || "").trim();
+
+  if (!email || !password) {
+      console.log("Complete all fields");
+      return res.status(400).render("adminLogin.ejs", {error: "All fields are required"});
+  }
+
+  if (hasInvalidEmailDomain(email)) { //my check against invalid domain
+    return res.status(400).render("adminLogin.ejs", { error: "Invalid email domain. Please use a valid email address." });
+  }
+
+  try { // to check the DB if the accounts xist
+    const checkDetails = await db.query("SELECT id, email, role, password FROM user_reg_table WHERE email = $1", [email]);
+
+    if (checkDetails.rows.length === 0) {
+      return res.status(400).render("adminLogin.ejs", { error: "Incorrect Details" });
+    }
+
+    console.log(checkDetails.rows);
+    const userRole = checkDetails.rows[0].role;
+    const userPassword = checkDetails.rows[0].password;  
+    
+    //now i want to Compare entered plain-text password with stored hashed password
+    const isPasswordMatch = await bcrypt.compare(password, userPassword);
+
+    if (!isPasswordMatch) {
+      return res.status(400).render("adminLogin.ejs", { error: "Incorrect Details" });
+    }
+
+    if (userRole !== "admin") {
+      return res.status(400).render("adminLogin.ejs", { error: "Access denied. Not an admin account." });
+    }
+
+    req.session.userId = checkDetails.rows[0].id;
+    req.session.isAdmin = true;
+
+    console.log("Login Successfully and User logged in with ID:", req.session.userId);
+    return res.redirect("/adminDashboard");
+
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("loginUser.ejs", { error: "Internal Server Error" });
+  }
+});
+
+//to render the userDashboard page
+app.get("/adminDashboard", async (req, res) => {
+  if (!req.session.userId) {
+    return res.redirect("/");
+  }
+
+  try{
+    return res.status(200).render("adminDashboard.ejs");
+  } catch (error) {
+    console.log("An error occured: ", error.stack);
+    return res.status(500).render("adminlogin.ejs", {error: "Internal Server Error"})
+  }
+});
+
+//admin access to Menu Inventory
+app.get("/adminMenuInventory", async (req, res) => {
+  if (!req.session.userId || !req.session.isAdmin) {
+    return res.redirect("/");
+  }
+  try {
+    const result = await db.query("SELECT * FROM inventory_menu_table ORDER BY id");
+
+    const getMenuInventory = result.rows;
+
+    return res.status(200).render("adminDashboard.ejs", { MenuInventoryArray: getMenuInventory });
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("adminDashboard.ejs", { 
+      MenuInventoryArray: [], 
+      error: "Could not load menu inventory." });
+  }
+});
+
+//admin access to Book Reservation Inventory
+app.get("/adminBookReservation", async (req, res) => {
+  if (!req.session.userId || !req.session.isAdmin) {
+    return res.redirect("/");
+  }
+
+  try {
+    const result = await db.query("SELECT * FROM available_reservation_table ORDER BY id");
+
+    const getBookReservation = result.rows;
+
+    return res.status(200).render("adminDashboard.ejs", { ReservationInventoryArray: getBookReservation });
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("adminDashboard.ejs", { ReservationInventoryArray: [], error: "Could not load reservation inventory." });
+  }
+});
+
+//admin access to Booked Orders Inventory
+app.get("/adminBookedOrders", async (req, res) => {
+  if (!req.session.userId || !req.session.isAdmin) {
+    return res.redirect("/");
+  }
+
+  try {
+    const result = await db.query(
+      `SELECT a.id, a.activity_type,
+              COALESCE(i.inventory_name, r.reservation_name) AS item_name,
+              a.quantity, a.total_price, a.status,
+              TO_CHAR(a.booked_date, 'DD Mon YYYY, HH12:MI AM') AS formatted_date
+       FROM activity_registration_table a
+       LEFT JOIN inventory_menu_table i ON i.id = a.inventory_id
+       LEFT JOIN available_reservation_table r ON r.id = a.reservation_id
+       ORDER BY a.booked_date DESC`
+    );
+    return res.status(200).render("adminDashboard.ejs", { AllOrdersArray: result.rows });
+  } catch (error) {
+    console.error("An error occurred:", error.stack);
+    return res.status(500).render("adminDashboard.ejs", { AllOrdersArray: [], error: "Could not load orders." });
   }
 });
 

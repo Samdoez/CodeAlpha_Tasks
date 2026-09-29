@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <title>Best Restaurant Management System</title>
+</head>
+<body>
+    <div class="nav">
+        <h2 class="">Welcome to Best Restaurant Management System</h2>
+        <div class="userflex">
+            <h3 class="">Admin</h3>
+            <div>
+                <form action="/logout" method="POST">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="menu-cont">
+        <% if (locals.message) { %>
+                <p><%= message %></p>
+        <% } %>
+
+        <h1 class="culinary"> Track Daily Sales and Stock Inventory</h1>
+        <p>We make and serve the best meals in Best Restaurant</p>
+        <div class="menu-head ">
+            <a class="btn-link" href="/adminMenuInventory">View Menu Inventory</a>
+            <a class="btn-link" href="/adminBookReservation">View Reservation Inventory</a>
+            <a class="btn-link" href="/adminBookedOrders">All Completed Orders</a>
+        </div>
+
+        <% if (locals.error) { %>
+            <p class="err-style"><%= error %></p>
+        <% } %>
+
+        <% if (locals.MenuInventoryArray) { %>
+            <h2>Menu Inventory</h2>
+            <% if (MenuInventoryArray.length === 0) { %>
+                <p>No menu items yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                    <table class="reg-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Quantity Left</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% MenuInventoryArray.forEach((item, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= item.inventory_name %></td>
+                                    <td>₦<%= Number(item.inventory_price).toLocaleString('en-NG') %></td>
+                                    <td><%= item.inventory_quantity %></td>
+                                    <td><%= item.inventory_status %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% } %>
+
+        <% if (locals.ReservationInventoryArray) { %>
+            <h2>Reservation Inventory</h2>
+            <% if (ReservationInventoryArray.length === 0) { %>
+                <p>No reservation slots yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                    <table class="reg-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Table Type</th>
+                                <th>Price</th>
+                                <th>Slots Left</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% ReservationInventoryArray.forEach((item, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= item.reservation_name %></td>
+                                    <td>₦<%= Number(item.reservation_price).toLocaleString('en-NG') %></td>
+                                    <td><%= item.reservation_quantity %></td>
+                                    <td><%= item.reservation_status %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% } %>
+
+        <% if (locals.AllOrdersArray) { %>
+            <h2>All Completed Orders</h2>
+            <% if (AllOrdersArray.length === 0) { %>
+                <p>No orders yet.</p>
+            <% } else { %>
+                <div class="table-wrap">
+                    <table class="reg-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Type</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Total Price</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% AllOrdersArray.forEach((item, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= item.activity_type %></td>
+                                    <td><%= item.item_name %></td>
+                                    <td><%= item.quantity %></td>
+                                    <td>₦<%= Number(item.total_price).toLocaleString('en-NG', { minimumFractionDigits: 2 }) %></td>
+                                    <td><%= item.status %></td>
+                                    <td><%= item.formatted_date %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% } %>
+    </div>
+</body>
+</html>
