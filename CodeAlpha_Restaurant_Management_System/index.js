@@ -508,7 +508,6 @@ app.get("/adminBookReservation", async (req, res) => {
   if (!req.session.userId || !req.session.isAdmin) {
     return res.redirect("/");
   }
-
   try {
     const result = await db.query("SELECT * FROM available_reservation_table ORDER BY id");
 
