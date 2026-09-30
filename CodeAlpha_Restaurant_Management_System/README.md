@@ -4,65 +4,98 @@ A restaurant management system built as part of the Code Alpha Backend Internshi
 place orders, and reserve tables, while an admin can view live inventory and order activity — 
 all backed by a PostgreSQL database with atomic, race-condition-safe stock updates.
 
-Features
-Customer
-    Account system — signup, login, logout with hashed passwords (bcrypt) and session-based auth (express-session).
-    Menu browsing — food items displayed in a responsive card grid, each with an image, price, and live stock count.
-    Ordering — per-item quantity picker (+/-), a confirmation modal showing the item, quantity, and calculated total before submitting.
-    Table reservations — same card grid and confirmation flow, applied to table types (VIP, Bronze, Gold, Platinum, etc.).
-    Booked orders page — a single table listing all of a user's food orders and table reservations, each deletable with a confirmation modal. Deleting an order or reservation automatically restores the item's stock.
-    Live inventory sync — every order or reservation atomically decrements the relevant stock count in the database; items automatically flip to "out of stock" when they hit zero, and back to available stock is restored.
+FeaturesFeatures
+ Customer
+Authentication & Authorization: Secure signup, login, and logout using bcrypt password hashing and express-session.
 
-Admin
-    Role-based access — a role column on the user table gates all admin routes; only accounts with role = 'admin' can reach the admin dashboard.
-    Menu inventory view — current stock, price, and status for every menu item.
-    Reservation inventory view — current slot counts and status for every table type.
-    All orders view — every user's food orders and table reservations in one combined table, newest first.
+Menu & Stock Browsing: Interactive grid displaying items with live inventory counts and real-time "Out of Stock" indicators.
+
+Interactive Ordering: Dynamic per-item quantity selector (+/-) with client-side boundary checks and a modal confirmation flow.
+
+Table Reservations: Instant booking system for distinct seating tiers (VIP, Gold, Platinum, etc.).
+
+Booked Orders Dashboard: Centralized view of active food orders and table bookings with single-click order cancellation.
+
+Automatic Stock Restoration: Canceling an order or reservation atomically restores the exact quantity back to the inventory database.
+
+ Admin
+Role-Based Access Control (RBAC): Middleware-gated routes ensuring only authenticated accounts with role = 'admin' access management dashboards.
+
+Live Inventory Tracking: Monitor available stock, pricing, and active statuses across all food and drink items.
+
+Reservation Monitoring: Track real-time slot availability for all table categories.
+
+Unified Order Feed: Consolidated log displaying all user transactions sorted chronologically.
 
 Tech Stack
-    Backend: Node.js, Express
-    Views: EJS
-    Database: PostgreSQL (via pg, connection pooling with pg.Pool)
-    Auth: express-session, bcrypt
-    Frontend: Vanilla JS (modals, quantity pickers, fetch-based order/reservation submission), custom CSS (CSS Grid for the menu layout)
+Backend: Node.js, Express.js
 
-Database Design
-Table	          Purpose
-user_reg_table	Customer and admin accounts (role column distinguishes them)
-inventory_menu_table	Food/drink menu items — name, price, quantity, status, image
-available_reservation_table	Table/reservation types — name, price, quantity, status, image
-activity_registration_table	Unified log of every food order and table reservation, linked to whichever source table applies via a CHECK constraint
+Templating Engine: EJS
 
-Key design decisions:
+Database: PostgreSQL (pg pool connection management)
 
-Atomic stock updates. Every stock change (order, reservation, cancellation) uses a single UPDATE ... WHERE quantity >= $1 RETURNING ... statement, so a check-then-update race condition between two simultaneous requests is impossible — the database guarantees the check and the decrement happen as one step.
-Transactions for multi-table writes. Placing an order touches two tables (decrementing stock, inserting the activity record); both happen inside a single BEGIN / COMMIT transaction, with ROLLBACK on any failure, so the two writes can never get out of sync.
-CHECK constraints as a second safety net. Beyond application-level validation, the database itself rejects negative stock and enforces that every activity log row is either a food order or a table reservation, never both or neither.
+Authentication: express-session, bcrypt
 
-Project Structure (high-level)
-/public          → static assets (CSS, images)
-/views           → EJS templates (dashboard, menu, reservations, booked orders, admin views)
-index.js         → Express app, routes, and DB queries
+Frontend: Vanilla JavaScript (Fetch API, DOM manipulation, Modals), Custom CSS Grid
+
+Database Architecture
+Table	Purpose
+user_reg_table	Customer and admin account storage (role column gates privileges)
+inventory_menu_table	Food and drink catalog (pricing, stock levels, status, image URLs)
+available_reservation_table	Table seating tiers and booking availability
+activity_registration_table	Unified transaction ledger linked via CHECK constraints
+Key Engineering Decisions
+Atomic Stock Updates: All inventory updates utilize atomic database operations (UPDATE ... SET quantity = quantity - $1 WHERE quantity >= $1) to guarantee concurrency safety and prevent check-then-write race conditions.
+
+Transactional Integrity: Order placement and stock deduction execute within PostgreSQL transactions (BEGIN / COMMIT / ROLLBACK) to eliminate partial writes or desynchronized data.
+
+Database Guardrails: PostgreSQL CHECK constraints strictly enforce non-negative stock values directly at the database layer.
 
 Getting Started
-Clone the repo and install dependencies:
-bash
-   npm install
-   
-Set up a .env file with your PostgreSQL credentials:
-   PG_USER=your_pg_user
-   PG_HOST=localhost
-   PG_DATABASE=your_db_name
-   PG_PASSWORD=your_pg_password
-   PG_PORT=5432
-   SESSION_SECRET=your_session_secret
+Prerequisites
+Node.js (v18+)
 
-Run the schema and seed scripts against your database to create the tables and initial menu/reservation data.
+PostgreSQL (v14+)
 
-Start the server:
-bash
-   node index.js
-Visit http://localhost:3000 in your browser.
-Status
+Installation
+Clone the repository:
 
-Actively being built as part of the Code Alpha internship. Core ordering, reservation, and admin-viewing flows are functional. Planned/optional additions include daily sales reporting and low-stock alerts for the admin dashboard.
+Bash
+git clone [https://github.com/your-username/restaurant-management-system.git]
+cd restaurant-management-system
+Install dependencies:
+
+Bash
+npm install
+Configure Environment Variables:
+Create a .env file in the root directory:
+
+Code snippet
+PG_USER=your_pg_user
+PG_HOST=localhost
+PG_DATABASE=restaurant_db
+PG_PASSWORD=your_pg_password
+PG_PORT=5432
+SESSION_SECRET=your_super_secret_key
+PORT=3000
+Initialize Database Schema:
+Run your SQL initialization script against your PostgreSQL instance:
+
+Bash
+psql -U your_pg_user -d restaurant_db -f schema.sql
+Start the application:
+
+Bash
+node index.js
+Navigate to http://localhost:3000 in your browser.
+
+Roadmap / Planned Features
+[x] Core ordering & table reservation engine
+
+[x] Concurrency-safe PostgreSQL stock management
+
+[x] Admin oversight dashboard
+
+[ ] Daily sales analytics & revenue metrics
+
+[ ] Automated low-stock email alerts for admins
